@@ -44,13 +44,13 @@ class PlanetViewer {
 
         this.canvas.addEventListener('wheel', (event) => { this.zoom(event.deltaY * 0.0001); });
     
-        this.canvas.addEventListener('mousedown', (event) => {
+        this.canvas.addEventListener('pointerdown', (event) => {
             console.log(`clicking`);
             this.last_position.set(event.clientX, event.clientY);
             this.#mouse_down = true;
         });
     
-        this.canvas.addEventListener('mousemove', (event) => {
+        this.canvas.addEventListener('pointermove', (event) => {
             if(this.#mouse_down) {
                 const current_position = new Vector2(event.clientX, event.clientY);
                 const diff = Vector2.from(current_position).sub(this.last_position);
@@ -61,7 +61,7 @@ class PlanetViewer {
             }
         });
     
-        this.canvas.addEventListener('mouseup', (event) => {
+        this.canvas.addEventListener('pointerup', (event) => {
             console.log(`releasing`);
             this.#mouse_down = false;
         });
