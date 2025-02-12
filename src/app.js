@@ -31,7 +31,6 @@ let planet_viewer;
 
 
 
-
 /**
  * @type {RenderShader}  
  */
@@ -53,9 +52,9 @@ let uniform_buffer;
 let render_system;
 
 /**
- * @type {Texture2D}
+ * @type {RenderTarget}
  */
-let depth_texture;
+let g_buffer;
 
 
 let last_frame = 0;
@@ -96,8 +95,8 @@ function loop() {
         ]
     };
 
-    const target = {
-        target: RenderSystem.get_default_render_target(),
+    let target = {
+        target: RenderSystem.get_default_render_target(), // g_buffer,
         clear_color: [0.0, 0.0, 0.0, 1.0],
         enable_depth_test: true
     };
@@ -206,14 +205,12 @@ async function start_app() {
 
         planet_shader.vertex_source = planet_vertex_glsl;
         planet_shader.fragment_source = planet_fragment_glsl;
-
-        shader = new RenderShader_WebGL(
-            planet_vertex_glsl,
-            planet_fragment_glsl
-        );
     }
 
+
     Diagnostics.log(`using backend: ${RenderSystem.get_current_backend()}`);
+
+
 
     texture = RenderSystem.create_texture_2D(texture_info.size, texture_info.data);
 
@@ -250,6 +247,11 @@ async function start_app() {
 
     uniform_buffer = RenderSystem.create_uniform_buffer(uniform_buffer_data.byteLength);
     uniform_buffer.write_data(uniform_buffer_data);
+
+    g_buffer = RenderSystem.create_render_target(new Extents2D(1280, 720));
+    g_buffer.add_color_attachment('albedo');
+    g_buffer.add_depth_attachment();
+
 
     requestAnimationFrame(loop);
 }
