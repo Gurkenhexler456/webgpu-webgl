@@ -324,6 +324,8 @@ async function start_app() {
 
         sun_shader_sources.vertex_source = sun_vertex_wgsl;
         sun_shader_sources.fragment_source = sun_fragment_wgsl;
+
+        
     }
     else {
 
@@ -347,12 +349,13 @@ async function start_app() {
 
         sun_shader_sources.vertex_source = sun_vertex_glsl;
         sun_shader_sources.fragment_source = sun_fragment_glsl;
+
+        Diagnostics.log(`using backend: ${RenderSystem.get_current_backend()}`);
     }
 
 
     Diagnostics.log(`using backend: ${RenderSystem.get_current_backend()}`);
-
-
+    Diagnostics.log(`renderer info: ${RenderSystem.get_renderer_info()}`);
 
     texture = RenderSystem.create_texture_2D(texture_info.size, texture_info.data);
 
@@ -374,11 +377,9 @@ async function start_app() {
 
     planets.forEach((planet) => {
         planet.radius *= 10;
-        
     });
 
     sun.radius *= 10;
-   
 
     console.log(planets);
 
