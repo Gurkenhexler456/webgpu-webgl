@@ -1,0 +1,11 @@
+canvas {
+    max-width: 800px;
+}
+
+#info_container {
+    margin-left: 2em;
+}
+
+#site-content {
+    flex-direction: row;
+}

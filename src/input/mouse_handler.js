@@ -35,7 +35,7 @@ class PlanetViewer {
         this.camera.yaw += delta_rotation.x;
         this.camera.pitch -= delta_rotation.y;
 
-        console.log(`camera: yaw: ${this.camera.yaw}, pitch: ${this.camera.pitch}`);
+        //console.log(`camera: yaw: ${this.camera.yaw}, pitch: ${this.camera.pitch}`);
     }
 
     

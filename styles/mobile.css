@@ -1,0 +1,27 @@
+canvas {
+    width: 100%;
+}
+
+#site-content {
+    flex-direction: column;
+}
+
+#info_container {
+    margin-top: 2em;
+}
+
+.text {
+    font: normal 5em monospace;
+}
+
+#render_info p {
+    font: normal 2.5em monospace;
+}
+
+.bottom_button {
+    background-color: rgb(0, 202, 202);
+    transition: background-color 300ms ease;
+    border: 0;
+    padding: .25em;
+    font: normal 4em monospace;
+}

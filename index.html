@@ -48,15 +48,52 @@
         <script src="src/solar_system/planet.js"></script>
         
         <script src="src/input/mouse_handler.js"></script>
+
+        <link rel="stylesheet" href="styles/style.css">
+        <link rel="stylesheet" media="(orientation: landscape)" href="styles/desktop.css">
+        <link rel="stylesheet" media="(orientation: portrait)" href="styles/mobile.css">
     </head>
-    <body style="background-color: black;">
-        <canvas id="planet_canvas" width="720" height="450"></canvas>
-        <p id="frame_time" style="color: lightgray;"></p>
-        <p id="backend" style="color: lightgray;"></p>
+    <body>
+        <div id="site-content">
 
-        <input type="button" id="initiate_log_download" value="get log">
+            <div id="output_container">
+                <canvas id="planet_canvas" width="1000" height="1000"></canvas>
 
-        <script src="src/app.js"></script>
+                <div id="render_info">
+                    <p id="frame_time" class="text"></p>
+                    <p id="backend" class="text"></p>
+                </div>
 
+            </div>
+
+            <div id="info_container">
+
+                <div style="display: flex; justify-content: space-between;">
+
+                    <p class="text" style="margin: 0px;">Focus:</p>
+                    <select id="planet_list" name="planet_list" class="text" style="margin-top: 1em; margin-bottom: 1em; margin: 0px; width: 50%;">
+                        <option class="planet_entry" value="sun">Sun</option>
+                        <option class="planet_entry" value="mercury">Mercury</option>
+                        <option class="planet_entry" value="venus">Venus</option>
+                        <option class="planet_entry" value="earth" selected="selected">Earth</option>
+                        <option class="planet_entry" value="moon">Moon</option>
+                        <option class="planet_entry" value="mars">Mars</option>
+                        <option class="planet_entry" value="jupiter">Jupiter</option>
+                        <option class="planet_entry" value="saturn">Saturn</option>
+                        <option class="planet_entry" value="uranus">Uranus</option>
+                        <option class="planet_entry" value="neptune">Neptune</option>
+                        <option class="planet_entry" value="pluto">Pluto</option>
+                    </select>
+
+                </div>
+        
+                <div id="footer_div">
+                    <input type="button" class="bottom_button" id="intiate_backend_change" value="SWITCH BACKEND">
+                    <input type="button" class="bottom_button" id="initiate_log_download" value="GET LOG FILE">
+                </div>
+            </div>
+
+            <script src="src/app.js"></script>
+        </div>
     </body>
 </html>
