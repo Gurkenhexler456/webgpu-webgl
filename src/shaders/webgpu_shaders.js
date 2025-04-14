@@ -1,4 +1,4 @@
-const planet_vertex_wgsl = `
+export const planet_vertex_wgsl = `
         struct CommonData {
             projection: mat4x4f,
             view: mat4x4f,
@@ -43,7 +43,7 @@ const planet_vertex_wgsl = `
             return vsOut;
         }`;
 
-const planet_fragment_wgsl = `
+export const planet_fragment_wgsl = `
 
         @group(0) @binding(1) var tex_sampler: sampler;
         @group(0) @binding(2) var tex_texture: texture_2d<f32>;
@@ -83,7 +83,7 @@ const planet_fragment_wgsl = `
 
 
 
-const sun_vertex_wgsl = `
+export const sun_vertex_wgsl = `
 
         struct VSInput {
             @location(0) position: vec3f,
@@ -122,7 +122,7 @@ const sun_vertex_wgsl = `
             return vs_output;
         }`;
 
-const sun_fragment_wgsl = `
+export const sun_fragment_wgsl = `
         struct FSOutput {
             @location(0) color: vec4f,
             @location(1) world_position: vec4f,
@@ -149,7 +149,7 @@ const sun_fragment_wgsl = `
 
 
 
-const quad_vertex_wgsl = `
+export const quad_vertex_wgsl = `
 
         const positions = array(
             vec3f(-1.0, -1.0,  0.0),
@@ -187,7 +187,7 @@ const quad_vertex_wgsl = `
             return vs_output;
         }`;
 
-const quad_fragment_wgsl = `
+export const quad_fragment_wgsl = `
 
 
         struct Matrices {

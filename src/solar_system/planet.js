@@ -1,4 +1,6 @@
-class Planet extends CelestialBody {
+import { CelestialBody } from "./solar_sytem.js";
+
+export class Planet extends CelestialBody {
 
     /**
      * 

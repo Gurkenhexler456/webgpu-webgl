@@ -1,4 +1,7 @@
-class PlanetViewer {
+import { SphereCamera } from "../../lib/graphics/util/sphere_camera.js";
+import { Vector2, Vector3 } from "../../lib/math/vector.js";
+
+export class PlanetViewer {
 
     #mouse_down = false;
 

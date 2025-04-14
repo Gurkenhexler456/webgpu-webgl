@@ -1,15 +1,18 @@
+import { from_spherical } from "../lib/math/util.js";
+import { Vector2, Vector3 } from "../lib/math/vector.js";
+
 /**
  * 
  * @param {Float32Array} vertex_data 
  * @param {Uint32Array} indices 
  */
-function IndexedModel(vertex_data, indices) {
+export function IndexedModel(vertex_data, indices) {
     this.vertex_data = vertex_data;
     this.index_data = indices;
 }
 
 
-function create_sphere(col_count, row_count, radius) {
+export function create_sphere(col_count, row_count, radius) {
 
     const step = new Vector2(1. / col_count, 1. / row_count);
     const step_angle = new Vector2(step.x * 2 * Math.PI, step.y * Math.PI);
@@ -74,7 +77,7 @@ function create_sphere(col_count, row_count, radius) {
  * @param {Extents2D} size 
  * @returns {IndexedModel}
  */
-function create_rect(size) {
+export function create_rect(size) {
 
     const center = new Vector2(size.width, size.height).scale(0.5);
 

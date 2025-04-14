@@ -1,3 +1,54 @@
+import { RenderSystem } from "../lib/graphics/render_system.js";
+import { create_checker_texture, load_texture } from "../lib/graphics/texture.js";
+import { Matrix4 } from "../lib/math/matrix.js";
+import { Extents2D, to_radians } from "../lib/math/util.js";
+import { Vector3 } from "../lib/math/vector.js";
+import { Diagnostics } from "../lib/util/diagnostics.js";
+
+import { WebGPUUtil } from "../lib/graphics/backend/webgpu/gpu_util.js";
+
+import { PlanetViewer } from "./input/mouse_handler.js";
+import { planet_fragment_glsl, planet_vertex_glsl, quad_fragment_glsl, quad_vertex_glsl, sun_fragment_glsl, sun_vertex_glsl } from "./shaders/webgl_shaders.js";
+import { planet_fragment_wgsl, planet_vertex_wgsl, quad_fragment_wgsl, quad_vertex_wgsl, sun_fragment_wgsl, sun_vertex_wgsl } from "./shaders/webgpu_shaders.js";
+import { Planet } from "./solar_system/planet.js";
+import { RenderSystem_WebGPU } from "../lib/graphics/backend/webgpu/render_system_impl_webgpu.js";
+import { RenderTarget_WebGPU } from "../lib/graphics/backend/webgpu/render_target_impl_webgpu.js";
+import { WebGLUtil } from "../lib/graphics/backend/webgl/gl_util.js";
+import { RenderSystem_WebGL } from "../lib/graphics/backend/webgl/render_system_impl_webgl.js";
+
+
+
+async function choose_backend(canvas_id, backend) {
+
+    backend = backend || RenderSystem.BACKEND_WEBGL_2;
+
+    let system = null;
+
+    if(backend === RenderSystem.BACKEND_WEBGPU) {
+        await WebGPUUtil.init(canvas_id);
+
+        system = new RenderSystem_WebGPU();
+        RenderTarget_WebGPU.init();
+        system.renderer.switch_render_target({
+            target: RenderTarget_WebGPU.get_default(),
+            clear_color: [0.0, 0.0, 0.0, 0.0],
+            enable_depth_test: false
+        });
+    }
+    else if(backend === RenderSystem.BACKEND_WEBGL_2) {
+        WebGLUtil.init(canvas_id);
+
+        system = new RenderSystem_WebGL();
+    }
+    else {
+        throw new Error(`backend not supported: ${backend}`);
+    }
+
+    return system;
+}
+
+
+
 const perspective_props = {
     fov: to_radians(75),
     ratio: 1,
@@ -92,7 +143,6 @@ let this_frame = 0;
 let time = 0;
 
 let frame_count = 0;
-
 
 function loop() {
 
@@ -267,7 +317,7 @@ async function start_app() {
     })
 
     // preparing test texture
-    texture_size = new Extents2D(1000, 500);
+    let texture_size = new Extents2D(1000, 500);
 
     /**
      * @type {{size: Extents2D, data: Uint8Array}}
@@ -305,7 +355,7 @@ async function start_app() {
 
     if(WEBGPU_SUPPORTED) {
 
-        await RenderSystem.init('planet_canvas', RenderSystem.BACKEND_WEBGPU);
+        await choose_backend('planet_canvas', RenderSystem.BACKEND_WEBGPU);
 
         document.getElementById('backend').innerHTML = `Backend: WebGPU`;
 
@@ -329,7 +379,7 @@ async function start_app() {
     }
     else {
 
-        await RenderSystem.init('planet_canvas');
+        await choose_backend('planet_canvas');
 
         document.getElementById('backend').innerHTML = `Backend: WebGL 2`;
 
@@ -377,9 +427,15 @@ async function start_app() {
 
     planets.forEach((planet) => {
         planet.radius *= 10;
+        load_texture(`images/${planet.name}.jpg`, (tex) => {
+            planet.texture = tex;
+        }, () => {});
     });
 
     sun.radius *= 10;
+    load_texture(`images/${sun.name}.jpg`, (tex) => {
+        sun.texture = tex;
+    }, () => {});
 
     console.log(planets);
 

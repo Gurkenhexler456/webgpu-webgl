@@ -4,51 +4,6 @@
         <title>Solar System</title>
         <meta charset="utf-8"/>
 
-        <script src="lib/util/errors.js"></script>
-        <script src="lib/util/diagnostics.js"></script>
-
-        <script src="lib/graphics/util/camera.js"></script>
-        <script src="lib/graphics/util/sphere_camera.js"></script>
-
-        <script src="lib/math/util.js"></script>
-        <script src="lib/math/vector.js"></script>
-        <script src="lib/math/quaternion.js"></script>
-        <script src="lib/math/matrix.js"></script>
-
-        <script src="lib/graphics/renderer.js"></script>
-        <script src="lib/graphics/buffer.js"></script>
-        <script src="lib/graphics/shader.js"></script>
-        <script src="lib/graphics/texture.js"></script>
-        <script src="lib/graphics/render_target.js"></script>
-        <script src="lib/graphics/render_system.js"></script>
-
-        <script src="lib/graphics/backend/webgl/gl_util.js"></script>
-        <script src="lib/graphics/backend/webgl/renderer_impl_webgl.js"></script>
-        <script src="lib/graphics/backend/webgl/buffer_impl_webgl.js"></script>
-        <script src="lib/graphics/backend/webgl/shader_impl_webgl.js"></script>
-        <script src="lib/graphics/backend/webgl/texture_impl_webgl.js"></script>
-        <script src="lib/graphics/backend/webgl/render_target_impl_webgl.js"></script>
-        <script src="lib/graphics/backend/webgl/render_system_impl_webgl.js"></script>
-
-        <script src="lib/graphics/backend/webgpu/gpu_util.js"></script>
-        <script src="lib/graphics/backend/webgpu/renderer_impl_webgpu.js"></script>
-        <script src="lib/graphics/backend/webgpu/buffer_impl_webgpu.js"></script>
-        <script src="lib/graphics/backend/webgpu/shader_impl_webgpu.js"></script>
-        <script src="lib/graphics/backend/webgpu/texture_impl_webgpu.js"></script>
-        <script src="lib/graphics/backend/webgpu/render_target_impl_webgpu.js"></script>
-        <script src="lib/graphics/backend/webgpu/render_system_impl_webgpu.js"></script>
-
-        <script src="src/sphere.js"></script>
-
-
-        <script src="src/shaders/webgl_shaders.js"></script>
-        <script src="src/shaders/webgpu_shaders.js"></script>
-
-        <script src="src/solar_system/solar_sytem.js"></script>
-        <script src="src/solar_system/planet.js"></script>
-        
-        <script src="src/input/mouse_handler.js"></script>
-
         <link rel="stylesheet" href="styles/style.css">
         <link rel="stylesheet" media="(orientation: landscape)" href="styles/desktop.css">
         <link rel="stylesheet" media="(orientation: portrait)" href="styles/mobile.css">
@@ -72,7 +27,7 @@
 
                     <p class="text" style="margin: 0px;">Focus:</p>
                     <select id="planet_list" name="planet_list" class="text" style="margin-top: 1em; margin-bottom: 1em; margin: 0px; width: 50%;">
-                        <option class="planet_entry" value="sun">Sun</option>
+                        <!--<option class="planet_entry" value="sun">Sun</option>-->
                         <option class="planet_entry" value="mercury">Mercury</option>
                         <option class="planet_entry" value="venus">Venus</option>
                         <option class="planet_entry" value="earth" selected="selected">Earth</option>
@@ -93,7 +48,7 @@
                 </div>
             </div>
 
-            <script src="src/app.js"></script>
+            <script src="src/app.js" type="module"></script>
         </div>
     </body>
 </html>

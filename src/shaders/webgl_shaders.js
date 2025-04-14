@@ -1,4 +1,4 @@
-const planet_vertex_glsl = `#version 300 es
+export const planet_vertex_glsl = `#version 300 es
 
         layout (location = 0) in vec3 in_Position;
         layout (location = 1) in vec2 in_UV;
@@ -26,7 +26,7 @@ const planet_vertex_glsl = `#version 300 es
             gl_Position = u_common.projection * u_common.view * world_pos;
         }`;
 
-const planet_fragment_glsl = `#version 300 es
+export const planet_fragment_glsl = `#version 300 es
         precision highp float;
 
         in vec3 vf_World_Position;
@@ -49,7 +49,7 @@ const planet_fragment_glsl = `#version 300 es
 
 
 
-const sun_vertex_glsl = `#version 300 es
+export const sun_vertex_glsl = `#version 300 es
 
         layout (location = 0) in vec3 in_Position;
         layout (location = 1) in vec2 in_UV;
@@ -77,7 +77,7 @@ const sun_vertex_glsl = `#version 300 es
             gl_Position = u_common.projection * u_common.view * world_pos;
         }`;
 
-const sun_fragment_glsl = `#version 300 es
+export const sun_fragment_glsl = `#version 300 es
         precision highp float;
 
         in vec3 vf_World_Position;
@@ -102,7 +102,7 @@ const sun_fragment_glsl = `#version 300 es
 
 
 
-const quad_vertex_glsl = `#version 300 es
+export const quad_vertex_glsl = `#version 300 es
 
         out vec2 vf_UV;
         
@@ -132,7 +132,7 @@ const quad_vertex_glsl = `#version 300 es
             gl_Position = vec4(positions[gl_VertexID], 1.0);
         }`;
 
-const quad_fragment_glsl = `#version 300 es
+export const quad_fragment_glsl = `#version 300 es
         precision highp float;
 
         in vec2 vf_UV;
@@ -158,7 +158,7 @@ const quad_fragment_glsl = `#version 300 es
 
         const vec3 LIGHT_POS = vec3(0, 0, 0);
 
-        const float STEP_COUNT = 10.;
+        const float STEP_COUNT = 15.;
         const float DENSITY_FALLOF = 1.0;
         const float STEP_INCREMENT = 1. / (STEP_COUNT - 1.);
         const vec3 WAVE_LENGTHS = vec3(700, 530, 440);
@@ -274,7 +274,6 @@ const quad_fragment_glsl = `#version 300 es
                 float other_side_dist = sphere_intersection(intersection + rd * 0.0001, rd, planet_pos, atmosphere_radius);
                 float sample_dist = lin_depth < other_side_dist + dist ? length(base_position - intersection) : other_side_dist;
 
-                float acc_height = 0.;
                 vec3 light = calculate_light(intersection, rd, sample_dist, color);
 
                 final_light = light;

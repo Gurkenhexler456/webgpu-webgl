@@ -1,4 +1,11 @@
-class Universe {
+import { AttributeDescription, AttributeType, BufferLayout } from "../../lib/graphics/buffer.js";
+import { RenderSystem } from "../../lib/graphics/render_system.js";
+import { Matrix4 } from "../../lib/math/matrix.js";
+import { Quaternion } from "../../lib/math/quaternion.js";
+import { Vector3 } from "../../lib/math/vector.js";
+import { create_sphere } from "../sphere.js";
+
+export class Universe {
     /**
      * used to scale seconds
      * @type {number}
@@ -20,7 +27,7 @@ class Universe {
     }
 }
 
-class CelestialBody {
+export class CelestialBody {
 
     static #BUFFER_LAYOUT = new BufferLayout(3 * 4 + 2 * 4 + 3 * 4, [
         new AttributeDescription(0, AttributeType.VEC3, 0),
