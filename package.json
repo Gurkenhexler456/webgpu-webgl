@@ -1,0 +1,15 @@
+{
+  "name": "solar-viewer",
+  "version": "0.1.0",
+  "description": "uses SolarEngine to render the solar system",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Tobias Hofmann",
+  "license": "ISC",
+  "private": true
+}

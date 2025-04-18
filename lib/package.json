@@ -1,0 +1,15 @@
+{
+  "name": "solor-engine",
+  "version": "0.1.0",
+  "description": "simple deferred renderer with webgl2 and webgpu support",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Tobias Hofmann",
+  "license": "ISC",
+  "private": true,
+  "devDependencies": {
+    "@webgpu/types": "^0.1.60"
+  }
+}

@@ -15,6 +15,10 @@ import { RenderSystem_WebGPU } from "../lib/graphics/backend/webgpu/render_syste
 import { RenderTarget_WebGPU } from "../lib/graphics/backend/webgpu/render_target_impl_webgpu.js";
 import { WebGLUtil } from "../lib/graphics/backend/webgl/gl_util.js";
 import { RenderSystem_WebGL } from "../lib/graphics/backend/webgl/render_system_impl_webgl.js";
+import { DeferredRenderer_WebGPU } from "../lib/solar_engine/backend/webgpu/deferred_renderer_impl_webgpu.js";
+import { Model_WebGPU } from "../lib/graphics/backend/webgpu/buffer_impl_webgpu.js";
+import { DeferredRenderer_WebGL } from "../lib/solar_engine/backend/webgl2/deferred_renderer_impl_webgl.js";
+import { get_test_scene } from "../lib/solar_engine/test_scene.js";
 
 
 
@@ -87,7 +91,7 @@ let selected_planet;
  */
 let planet_viewer;
 
-
+let new_rendering = true;
 
 
 /**
@@ -137,6 +141,11 @@ let g_buffer;
  */
 let quad_shader;
 
+
+
+let scene;
+
+
 let last_frame = 0;
 let this_frame = 0;
 
@@ -165,129 +174,164 @@ function loop() {
     sun.update(24 * delta_s);
 
 
-    const planet_shader = {
-        program: shader,
-        uniforms: uniform_buffer,
-        textures: [
-            {
-                sampler: texture.sampler,
-                texture: texture.texture
+    scene.objs[0].transform = Matrix4.identity();
+    scene.objs[0].transform.set_translation(0, 0, -3 + Math.sin(time));
+
+
+    if(new_rendering) {
+ 
+        const objs = planets.map((planet) => {
+
+            /**
+             * @type {Model_WebGL}
+             */
+            const model = planet.model;
+
+            let tex = texture.texture;
+            if(planet.texture) {
+                tex = planet.texture.texture;
             }
-        ]
-    };
 
-
-    const light_shader = {
-        program: sun_shader,
-        uniforms: uniform_buffer,
-        textures: [
-            {
-                sampler: texture.sampler,
-                texture: texture.texture
+            return {
+                model,
+                transform: planet.transform,
+                texture: tex
             }
-        ]
-    };
+        });
 
-    let offscreen_target = {
-        target: g_buffer,
-        clear_color: [0.0, 0.0, 0.0, 1.0],
-        enable_depth_test: true
-    };
+        renderer.process(objs, planet_viewer.camera.camera);
 
-    let default_target = {
-        target: RenderSystem.get_default_render_target(),
-        clear_color: [1.0, 0.0, 0.0, 1.0],
-        enable_depth_test: false
-    };
+        requestAnimationFrame(loop);
+    }
+    else {
 
-    uniform_buffer_data.set(planet_viewer.camera.camera.view.data, 16);
-
-    
-    RenderSystem.Renderer.switch_render_target({
-        ...offscreen_target,
-        output_buffers: ['albedo', 'position', 'normal', 'light']
-    });
-    RenderSystem.Renderer.clear(offscreen_target.clear_color, offscreen_target.enable_depth_test);
+        const planet_shader = {
+            program: shader,
+            uniforms: uniform_buffer,
+            textures: [
+                {
+                    sampler: texture.sampler,
+                    texture: texture.texture
+                }
+            ]
+        };
 
 
+        const light_shader = {
+            program: sun_shader,
+            uniforms: uniform_buffer,
+            textures: [
+                {
+                    sampler: texture.sampler,
+                    texture: texture.texture
+                }
+            ]
+        };
 
-    RenderSystem.Renderer.switch_render_target({
-        ...offscreen_target,
-        output_buffers: ['albedo', 'position', 'normal']
-    });
+        let offscreen_target = {
+            target: g_buffer,
+            clear_color: [0.0, 0.0, 0.0, 1.0],
+            enable_depth_test: true
+        };
 
-    planets.forEach((current_planet) => {
+        let default_target = {
+            target: RenderSystem.get_default_render_target(),
+            clear_color: [1.0, 0.0, 0.0, 1.0],
+            enable_depth_test: false
+        };
 
-        const tex = current_planet.texture || texture;
+        uniform_buffer_data.set(planet_viewer.camera.camera.view.data, 16);
 
-        uniform_buffer_data.set(current_planet.transform.data, 32);
-        uniform_buffer_data.set(current_planet.transform.calc_normal_matrix().data, 48);
+        
+        RenderSystem.Renderer.switch_render_target({
+            ...offscreen_target,
+            output_buffers: ['albedo', 'position', 'normal', 'light']
+        });
+        RenderSystem.Renderer.clear(offscreen_target.clear_color, offscreen_target.enable_depth_test);
+
+
+
+        RenderSystem.Renderer.switch_render_target({
+            ...offscreen_target,
+            output_buffers: ['albedo', 'position', 'normal']
+        });
+
+        planets.forEach((current_planet) => {
+
+            const tex = current_planet.texture || texture;
+
+            uniform_buffer_data.set(current_planet.transform.data, 32);
+            uniform_buffer_data.set(current_planet.transform.calc_normal_matrix().data, 48);
+
+            // upload to gpu
+            uniform_buffer.write_data(uniform_buffer_data);
+
+            planet_shader.textures[0].texture = tex.texture;
+            planet_shader.textures[0].sampler = tex.sampler;
+
+            const render_step = {
+                model: current_planet.model,
+                shader: planet_shader
+            };
+
+            RenderSystem.Renderer.render_to_target(render_step, offscreen_target);
+        });
+
+
+        RenderSystem.Renderer.switch_render_target({
+            ...offscreen_target,
+            output_buffers: ['albedo', 'position', 'normal', 'light']
+        });
+
+
+        uniform_buffer_data.set(sun.transform.data, 32);
+        uniform_buffer_data.set(sun.transform.calc_normal_matrix().data, 48);
 
         // upload to gpu
         uniform_buffer.write_data(uniform_buffer_data);
 
-        planet_shader.textures[0].texture = tex.texture;
-        planet_shader.textures[0].sampler = tex.sampler;
+        const t = sun.texture || texture;
 
-        const render_step = {
-            model: current_planet.model,
-            shader: planet_shader
-        };
+        light_shader.textures[0].texture = t.texture;
+        light_shader.textures[0].sampler = t.sampler;
 
-        RenderSystem.Renderer.render_to_target(render_step, offscreen_target);
-    });
-
-
-    RenderSystem.Renderer.switch_render_target({
-        ...offscreen_target,
-        output_buffers: ['albedo', 'position', 'normal', 'light']
-    });
-
-
-    uniform_buffer_data.set(sun.transform.data, 32);
-    uniform_buffer_data.set(sun.transform.calc_normal_matrix().data, 48);
-
-    // upload to gpu
-    uniform_buffer.write_data(uniform_buffer_data);
-
-    const t = sun.texture || texture;
-
-    light_shader.textures[0].texture = t.texture;
-    light_shader.textures[0].sampler = t.sampler;
-
-    RenderSystem.Renderer.render_to_target({
-        model: sun.model,
-        shader: light_shader
-    }, offscreen_target);
+        RenderSystem.Renderer.render_to_target({
+            model: sun.model,
+            shader: light_shader
+        }, offscreen_target);
 
 
 
-    atmosphere_buffer_data.set(Matrix4.inverse(planet_viewer.camera.camera.perspective.data).data, 0);
-    atmosphere_buffer_data.set(Matrix4.inverse(planet_viewer.camera.camera.view.data).data, 16);
-    atmosphere_buffer_data.set(Matrix4.inverse(new Matrix4(planet_viewer.camera.camera.view.data).multiply(planet_viewer.camera.camera.perspective).data).data, 32);
-    atmosphere_buffer.write_data(atmosphere_buffer_data);
+        atmosphere_buffer_data.set(Matrix4.inverse(planet_viewer.camera.camera.perspective.data).data, 0);
+        atmosphere_buffer_data.set(Matrix4.inverse(planet_viewer.camera.camera.view.data).data, 16);
+        atmosphere_buffer_data.set(Matrix4.inverse(new Matrix4(planet_viewer.camera.camera.view.data).multiply(planet_viewer.camera.camera.perspective).data).data, 32);
+        atmosphere_buffer.write_data(atmosphere_buffer_data);
 
-    RenderSystem.Renderer.switch_render_target(default_target);
-    RenderSystem.Renderer.clear(default_target.clear_color, default_target.enable_depth_test);
-    RenderSystem.Renderer.render_vertices({
-        shader: quad_shader, 
-        textures: [
-            {unit: 0, texture: g_buffer.attachments.get('albedo').texture, uniform_name: 'u_Albedo' },
-            {unit: 1, texture: g_buffer.attachments.get('position').texture, uniform_name: 'u_Position' },
-            {unit: 2, texture: g_buffer.attachments.get('normal').texture, uniform_name: 'u_Normal' },
-            {unit: 3, texture: g_buffer.attachments.get('light').texture, uniform_name: 'u_Light' },
-            {unit: 4, texture: g_buffer.attachments.get('depth').texture, uniform_name: 'u_Depth' }
-        ],
-        uniforms: [
-            { buffer: atmosphere_buffer, binding: 0, uniform_name: 'Matrices'}
-        ]
-    }, 6);
+        RenderSystem.Renderer.switch_render_target(default_target);
+        RenderSystem.Renderer.clear(default_target.clear_color, default_target.enable_depth_test);
+        RenderSystem.Renderer.render_vertices({
+            shader: quad_shader, 
+            textures: [
+                {unit: 0, texture: g_buffer.attachments.get('albedo').texture, uniform_name: 'u_Albedo' },
+                {unit: 1, texture: g_buffer.attachments.get('position').texture, uniform_name: 'u_Position' },
+                {unit: 2, texture: g_buffer.attachments.get('normal').texture, uniform_name: 'u_Normal' },
+                {unit: 3, texture: g_buffer.attachments.get('light').texture, uniform_name: 'u_Light' },
+                {unit: 4, texture: g_buffer.attachments.get('depth').texture, uniform_name: 'u_Depth' }
+            ],
+            uniforms: [
+                { buffer: atmosphere_buffer, binding: 0, uniform_name: 'Matrices'}
+            ]
+        }, 6);
 
-    frame_count++;
+        frame_count++;
 
-    requestAnimationFrame(loop);
+        requestAnimationFrame(loop);
+    }
 }
 
+
+let WEBGPU_SUPPORTED = false;
+let renderer;
 
 async function start_app() {
 
@@ -345,7 +389,7 @@ async function start_app() {
         fragment_source: ''
     }
 
-    let WEBGPU_SUPPORTED = false;
+    
 
     if(current_backend === 'webgpu') {
         WEBGPU_SUPPORTED = WebGPUUtil.is_webgpu_supported();
@@ -359,12 +403,12 @@ async function start_app() {
 
         document.getElementById('backend').innerHTML = `Backend: WebGPU`;
 
-        uniform_buffer_data.set(Matrix4.perspective_z01(
+        planet_viewer.camera.camera.perspective = Matrix4.perspective_z01(
             perspective_props.fov,
             perspective_props.ratio,
             perspective_props.z_near,
             perspective_props.z_far
-        ).data, 0);
+        );
 
         planet_shader.vertex_source = planet_vertex_wgsl;
         planet_shader.fragment_source = planet_fragment_wgsl;
@@ -375,7 +419,7 @@ async function start_app() {
         sun_shader_sources.vertex_source = sun_vertex_wgsl;
         sun_shader_sources.fragment_source = sun_fragment_wgsl;
 
-        
+        renderer = new DeferredRenderer_WebGPU(new Extents2D(1000, 1000));
     }
     else {
 
@@ -400,9 +444,10 @@ async function start_app() {
         sun_shader_sources.vertex_source = sun_vertex_glsl;
         sun_shader_sources.fragment_source = sun_fragment_glsl;
 
-        Diagnostics.log(`using backend: ${RenderSystem.get_current_backend()}`);
+        renderer = new DeferredRenderer_WebGL(new Extents2D(1000, 1000));
     }
 
+    scene = get_test_scene();
 
     Diagnostics.log(`using backend: ${RenderSystem.get_current_backend()}`);
     Diagnostics.log(`renderer info: ${RenderSystem.get_renderer_info()}`);

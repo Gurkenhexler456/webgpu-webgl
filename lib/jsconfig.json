@@ -1,0 +1,10 @@
+{
+    "compilerOptions": {
+        "target": "es6"
+    },
+    "typeAcquisition": {
+        "include": [
+            "./node_modules/@webgpu/types/dist/index.d.ts"
+        ]
+    }
+}
