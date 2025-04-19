@@ -98,6 +98,7 @@ function loop() {
 
 
         
+    let tex = texture.texture;
 
     const objs = planets.map((planet) => {
 
@@ -106,7 +107,7 @@ function loop() {
          */
         const model = planet.model;
 
-        let tex = texture.texture;
+        tex = texture.texture;
         if(planet.texture) {
             tex = planet.texture.texture;
         }
@@ -118,7 +119,19 @@ function loop() {
         }
     });
 
-    engine.render(objs, planet_viewer.camera.camera);
+    if(sun.texture) {
+        tex = sun.texture.texture;
+    }
+    const sun_scene_obj = {
+        model: sun.model,
+        transform: sun.transform,
+        texture: tex
+    }
+
+    engine.render({
+        objects: objs,
+        light_sources: [sun_scene_obj]
+    }, planet_viewer.camera.camera);
 
     requestAnimationFrame(loop);
    
