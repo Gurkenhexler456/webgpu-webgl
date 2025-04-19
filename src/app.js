@@ -5,51 +5,11 @@ import { Extents2D, to_radians } from "../lib/math/util.js";
 import { Vector3 } from "../lib/math/vector.js";
 import { Diagnostics } from "../lib/util/diagnostics.js";
 
-import { WebGPUUtil } from "../lib/graphics/backend/webgpu/gpu_util.js";
-
 import { PlanetViewer } from "./input/mouse_handler.js";
-import { planet_fragment_glsl, planet_vertex_glsl, quad_fragment_glsl, quad_vertex_glsl, sun_fragment_glsl, sun_vertex_glsl } from "./shaders/webgl_shaders.js";
-import { planet_fragment_wgsl, planet_vertex_wgsl, quad_fragment_wgsl, quad_vertex_wgsl, sun_fragment_wgsl, sun_vertex_wgsl } from "./shaders/webgpu_shaders.js";
 import { Planet } from "./solar_system/planet.js";
-import { RenderSystem_WebGPU } from "../lib/graphics/backend/webgpu/render_system_impl_webgpu.js";
-import { RenderTarget_WebGPU } from "../lib/graphics/backend/webgpu/render_target_impl_webgpu.js";
-import { WebGLUtil } from "../lib/graphics/backend/webgl/gl_util.js";
-import { RenderSystem_WebGL } from "../lib/graphics/backend/webgl/render_system_impl_webgl.js";
-import { DeferredRenderer_WebGPU } from "../lib/solar_engine/backend/webgpu/deferred_renderer_impl_webgpu.js";
-import { Model_WebGPU } from "../lib/graphics/backend/webgpu/buffer_impl_webgpu.js";
-import { DeferredRenderer_WebGL } from "../lib/solar_engine/backend/webgl2/deferred_renderer_impl_webgl.js";
 import { get_test_scene } from "../lib/solar_engine/test_scene.js";
-
-
-
-async function choose_backend(canvas_id, backend) {
-
-    backend = backend || RenderSystem.BACKEND_WEBGL_2;
-
-    let system = null;
-
-    if(backend === RenderSystem.BACKEND_WEBGPU) {
-        await WebGPUUtil.init(canvas_id);
-
-        system = new RenderSystem_WebGPU();
-        RenderTarget_WebGPU.init();
-        system.renderer.switch_render_target({
-            target: RenderTarget_WebGPU.get_default(),
-            clear_color: [0.0, 0.0, 0.0, 0.0],
-            enable_depth_test: false
-        });
-    }
-    else if(backend === RenderSystem.BACKEND_WEBGL_2) {
-        WebGLUtil.init(canvas_id);
-
-        system = new RenderSystem_WebGL();
-    }
-    else {
-        throw new Error(`backend not supported: ${backend}`);
-    }
-
-    return system;
-}
+import { EngineHelper } from "../lib/solar_engine/engine_helper.js";
+import { EngineBackend } from "../lib/solar_engine/engine.js";
 
 
 
@@ -60,21 +20,7 @@ const perspective_props = {
     z_far: 10000.0
 };
 
-
-const uniform_buffer_data = new Float32Array([
-    ...Matrix4.identity().data,
-
-    ...Matrix4.look_at(new Vector3(0, 0, 214.875), Vector3.zero(), new Vector3(0, 1, 0)).data,
-
-    ...Matrix4.identity().data,
-    ...Matrix4.identity().data,
-]);
-
-const atmosphere_buffer_data = new Float32Array([
-    ...Matrix4.identity().data,
-    ...Matrix4.identity().data,
-    ...Matrix4.identity().data
-]);
+const RENDER_RESOLUTION = new Extents2D(1000, 1000);
 
 /**
  * @type {Planet[]}
@@ -91,55 +37,28 @@ let selected_planet;
  */
 let planet_viewer;
 
-let new_rendering = true;
-
 
 /**
- * @type {RenderShader}  
+ * @type {SolarEngine}
  */
-let shader;
+let engine;
+
+
+let WEBGPU_SUPPORTED = false;
+
+
 
 /**
  * @type {Texture2D}
  */
 let texture;
 
-/**
- * @type {Buffer}
- */
-let uniform_buffer;
 
 
 /**
  * @type {Planet}
  */
 let sun;
-
-/**
- * @type {RenderShader}
- */
-let sun_shader;
-
-
-/**
- * @type {Buffer}
- */
-let atmosphere_buffer;
-
-/**
- * @type {RenderSystem}
- */
-let render_system;
-
-/**
- * @type {RenderTarget}
- */
-let g_buffer;
-
-/**
- * @type {RenderShader}
- */
-let quad_shader;
 
 
 
@@ -173,165 +92,37 @@ function loop() {
 
     sun.update(24 * delta_s);
 
-
+    
     scene.objs[0].transform = Matrix4.identity();
     scene.objs[0].transform.set_translation(0, 0, -3 + Math.sin(time));
 
 
-    if(new_rendering) {
- 
-        const objs = planets.map((planet) => {
-
-            /**
-             * @type {Model_WebGL}
-             */
-            const model = planet.model;
-
-            let tex = texture.texture;
-            if(planet.texture) {
-                tex = planet.texture.texture;
-            }
-
-            return {
-                model,
-                transform: planet.transform,
-                texture: tex
-            }
-        });
-
-        renderer.process(objs, planet_viewer.camera.camera);
-
-        requestAnimationFrame(loop);
-    }
-    else {
-
-        const planet_shader = {
-            program: shader,
-            uniforms: uniform_buffer,
-            textures: [
-                {
-                    sampler: texture.sampler,
-                    texture: texture.texture
-                }
-            ]
-        };
-
-
-        const light_shader = {
-            program: sun_shader,
-            uniforms: uniform_buffer,
-            textures: [
-                {
-                    sampler: texture.sampler,
-                    texture: texture.texture
-                }
-            ]
-        };
-
-        let offscreen_target = {
-            target: g_buffer,
-            clear_color: [0.0, 0.0, 0.0, 1.0],
-            enable_depth_test: true
-        };
-
-        let default_target = {
-            target: RenderSystem.get_default_render_target(),
-            clear_color: [1.0, 0.0, 0.0, 1.0],
-            enable_depth_test: false
-        };
-
-        uniform_buffer_data.set(planet_viewer.camera.camera.view.data, 16);
-
         
-        RenderSystem.Renderer.switch_render_target({
-            ...offscreen_target,
-            output_buffers: ['albedo', 'position', 'normal', 'light']
-        });
-        RenderSystem.Renderer.clear(offscreen_target.clear_color, offscreen_target.enable_depth_test);
 
+    const objs = planets.map((planet) => {
 
+        /**
+         * @type {Model_WebGL}
+         */
+        const model = planet.model;
 
-        RenderSystem.Renderer.switch_render_target({
-            ...offscreen_target,
-            output_buffers: ['albedo', 'position', 'normal']
-        });
+        let tex = texture.texture;
+        if(planet.texture) {
+            tex = planet.texture.texture;
+        }
 
-        planets.forEach((current_planet) => {
+        return {
+            model,
+            transform: planet.transform,
+            texture: tex
+        }
+    });
 
-            const tex = current_planet.texture || texture;
+    engine.render(objs, planet_viewer.camera.camera);
 
-            uniform_buffer_data.set(current_planet.transform.data, 32);
-            uniform_buffer_data.set(current_planet.transform.calc_normal_matrix().data, 48);
-
-            // upload to gpu
-            uniform_buffer.write_data(uniform_buffer_data);
-
-            planet_shader.textures[0].texture = tex.texture;
-            planet_shader.textures[0].sampler = tex.sampler;
-
-            const render_step = {
-                model: current_planet.model,
-                shader: planet_shader
-            };
-
-            RenderSystem.Renderer.render_to_target(render_step, offscreen_target);
-        });
-
-
-        RenderSystem.Renderer.switch_render_target({
-            ...offscreen_target,
-            output_buffers: ['albedo', 'position', 'normal', 'light']
-        });
-
-
-        uniform_buffer_data.set(sun.transform.data, 32);
-        uniform_buffer_data.set(sun.transform.calc_normal_matrix().data, 48);
-
-        // upload to gpu
-        uniform_buffer.write_data(uniform_buffer_data);
-
-        const t = sun.texture || texture;
-
-        light_shader.textures[0].texture = t.texture;
-        light_shader.textures[0].sampler = t.sampler;
-
-        RenderSystem.Renderer.render_to_target({
-            model: sun.model,
-            shader: light_shader
-        }, offscreen_target);
-
-
-
-        atmosphere_buffer_data.set(Matrix4.inverse(planet_viewer.camera.camera.perspective.data).data, 0);
-        atmosphere_buffer_data.set(Matrix4.inverse(planet_viewer.camera.camera.view.data).data, 16);
-        atmosphere_buffer_data.set(Matrix4.inverse(new Matrix4(planet_viewer.camera.camera.view.data).multiply(planet_viewer.camera.camera.perspective).data).data, 32);
-        atmosphere_buffer.write_data(atmosphere_buffer_data);
-
-        RenderSystem.Renderer.switch_render_target(default_target);
-        RenderSystem.Renderer.clear(default_target.clear_color, default_target.enable_depth_test);
-        RenderSystem.Renderer.render_vertices({
-            shader: quad_shader, 
-            textures: [
-                {unit: 0, texture: g_buffer.attachments.get('albedo').texture, uniform_name: 'u_Albedo' },
-                {unit: 1, texture: g_buffer.attachments.get('position').texture, uniform_name: 'u_Position' },
-                {unit: 2, texture: g_buffer.attachments.get('normal').texture, uniform_name: 'u_Normal' },
-                {unit: 3, texture: g_buffer.attachments.get('light').texture, uniform_name: 'u_Light' },
-                {unit: 4, texture: g_buffer.attachments.get('depth').texture, uniform_name: 'u_Depth' }
-            ],
-            uniforms: [
-                { buffer: atmosphere_buffer, binding: 0, uniform_name: 'Matrices'}
-            ]
-        }, 6);
-
-        frame_count++;
-
-        requestAnimationFrame(loop);
-    }
+    requestAnimationFrame(loop);
+   
 }
-
-
-let WEBGPU_SUPPORTED = false;
-let renderer;
 
 async function start_app() {
 
@@ -356,7 +147,8 @@ async function start_app() {
 
 
     document.getElementById('intiate_backend_change').addEventListener('click', (event) => {
-        url.searchParams.set('request_backend', current_backend !== 'webgpu' ? 'webgpu' : 'webgl2');
+        url.searchParams.set('request_backend', current_backend !== EngineBackend.BACKEND_WEBGPU ? 
+                                                    EngineBackend.BACKEND_WEBGPU : EngineBackend.BACKEND_WEBGL_2);
         window.location.href = url.href;
     })
 
@@ -374,82 +166,34 @@ async function start_app() {
 
     planet_viewer = new PlanetViewer('planet_canvas');
 
-    let planet_shader = {
-        vertex_source: '',
-        fragment_source: ''
-    }
-
-    let sun_shader_sources = {
-        vertex_source: '',
-        fragment_source: ''
-    }
-
-    let quad_shader_sources = {
-        vertex_source: '',
-        fragment_source: ''
-    }
-
     
+    engine = EngineHelper.create(document.getElementById('planet_canvas'), RENDER_RESOLUTION, current_backend);
+    await engine.init();
 
-    if(current_backend === 'webgpu') {
-        WEBGPU_SUPPORTED = WebGPUUtil.is_webgpu_supported();
-        console.log(`Is WebGPU supported: ${WEBGPU_SUPPORTED}`); 
-    }   
+    console.log(engine);
 
-
-    if(WEBGPU_SUPPORTED) {
-
-        await choose_backend('planet_canvas', RenderSystem.BACKEND_WEBGPU);
-
-        document.getElementById('backend').innerHTML = `Backend: WebGPU`;
-
+    if(engine.backend === EngineBackend.BACKEND_WEBGPU) {
         planet_viewer.camera.camera.perspective = Matrix4.perspective_z01(
             perspective_props.fov,
             perspective_props.ratio,
             perspective_props.z_near,
             perspective_props.z_far
         );
-
-        planet_shader.vertex_source = planet_vertex_wgsl;
-        planet_shader.fragment_source = planet_fragment_wgsl;
-
-        quad_shader_sources.vertex_source = quad_vertex_wgsl;
-        quad_shader_sources.fragment_source = quad_fragment_wgsl;
-
-        sun_shader_sources.vertex_source = sun_vertex_wgsl;
-        sun_shader_sources.fragment_source = sun_fragment_wgsl;
-
-        renderer = new DeferredRenderer_WebGPU(new Extents2D(1000, 1000));
     }
     else {
-
-        await choose_backend('planet_canvas');
-
-        document.getElementById('backend').innerHTML = `Backend: WebGL 2`;
-
-
         planet_viewer.camera.camera.perspective = Matrix4.perspective(
             perspective_props.fov,
             perspective_props.ratio,
             perspective_props.z_near,
             perspective_props.z_far
         );
-
-        planet_shader.vertex_source = planet_vertex_glsl;
-        planet_shader.fragment_source = planet_fragment_glsl;
-
-        quad_shader_sources.vertex_source = quad_vertex_glsl;
-        quad_shader_sources.fragment_source = quad_fragment_glsl;
-
-        sun_shader_sources.vertex_source = sun_vertex_glsl;
-        sun_shader_sources.fragment_source = sun_fragment_glsl;
-
-        renderer = new DeferredRenderer_WebGL(new Extents2D(1000, 1000));
     }
 
     scene = get_test_scene();
+    
+    document.getElementById('backend').innerHTML = `Backend: ${engine.backend}`;
 
-    Diagnostics.log(`using backend: ${RenderSystem.get_current_backend()}`);
+    Diagnostics.log(`using backend: ${engine.backend}`);
     Diagnostics.log(`renderer info: ${RenderSystem.get_renderer_info()}`);
 
     texture = RenderSystem.create_texture_2D(texture_info.size, texture_info.data);
@@ -485,40 +229,6 @@ async function start_app() {
     console.log(planets);
 
     select_planet(2);
-
-    shader = RenderSystem.create_render_shader(
-        planet_shader.vertex_source,
-        planet_shader.fragment_source
-    );
-
-    uniform_buffer_data.set(planet_viewer.camera.camera.perspective.data, 0);
-
-    uniform_buffer = RenderSystem.create_uniform_buffer(uniform_buffer_data.byteLength);
-    uniform_buffer.write_data(uniform_buffer_data);
-
-
-    sun_shader = RenderSystem.create_render_shader(
-        sun_shader_sources.vertex_source,
-        sun_shader_sources.fragment_source
-    );
-
-
-
-
-    g_buffer = RenderSystem.create_render_target(new Extents2D(1000, 1000));
-    g_buffer.add_color_attachment('albedo');
-    g_buffer.add_color_attachment('position', 'color32f');
-    g_buffer.add_color_attachment('normal', 'color32f');
-    g_buffer.add_color_attachment('light');
-    g_buffer.add_depth_attachment('depth');
-
-    quad_shader = RenderSystem.create_render_shader(
-        quad_shader_sources.vertex_source,
-        quad_shader_sources.fragment_source
-    );
-
-    atmosphere_buffer = RenderSystem.create_uniform_buffer(atmosphere_buffer_data.byteLength);
-    atmosphere_buffer.write_data(atmosphere_buffer_data);
 
     requestAnimationFrame(loop);
 }
