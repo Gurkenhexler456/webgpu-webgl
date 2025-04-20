@@ -142,7 +142,28 @@ async function start_app() {
     const url = new URL(window.location.href);
     let current_backend = url.searchParams.get('request_backend') || 'webgl2';
     let use_compute = false;
-    if(current_backend === EngineBackend.BACKEND_WEBGPU && url.searchParams.get('use_compute')) {
+
+
+
+    // preparing test texture
+    let texture_size = new Extents2D(1000, 500);
+
+    /**
+     * @type {{size: Extents2D, data: Uint8Array}}
+     */
+    let texture_info = {
+        size: texture_size,
+        data: create_checker_texture(texture_size)
+    };
+    
+
+    planet_viewer = new PlanetViewer('planet_canvas');
+
+    
+    engine = EngineHelper.create(document.getElementById('planet_canvas'), RENDER_RESOLUTION, current_backend);
+
+
+    if(engine.backend === EngineBackend.BACKEND_WEBGPU && url.searchParams.get('use_compute')) {
         use_compute = (url.searchParams.get('use_compute') === 'true');
     }
 
@@ -178,7 +199,7 @@ async function start_app() {
     })
 
     
-    if(current_backend === EngineBackend.BACKEND_WEBGL_2) {
+    if(engine.backend === EngineBackend.BACKEND_WEBGL_2) {
         document.getElementById('toggle_compute_shader').hidden = true;
     }
     else {
@@ -188,27 +209,8 @@ async function start_app() {
         })
     }
 
-
-    // preparing test texture
-    let texture_size = new Extents2D(1000, 500);
-
-    /**
-     * @type {{size: Extents2D, data: Uint8Array}}
-     */
-    let texture_info = {
-        size: texture_size,
-        data: create_checker_texture(texture_size)
-    };
-    
-
-    planet_viewer = new PlanetViewer('planet_canvas');
-
-    
-    engine = EngineHelper.create(document.getElementById('planet_canvas'), RENDER_RESOLUTION, current_backend, {
-        use_compute
-    });
+    engine.set_props({ use_compute });
     await engine.init();
-
     console.log(engine);
 
     if(engine.backend === EngineBackend.BACKEND_WEBGPU) {
