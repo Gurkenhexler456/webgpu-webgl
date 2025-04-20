@@ -107,9 +107,9 @@ function loop() {
          */
         const model = planet.model;
 
-        tex = texture.texture;
+        tex = texture;
         if(planet.texture) {
-            tex = planet.texture.texture;
+            tex = planet.texture;
         }
 
         return {
@@ -120,7 +120,7 @@ function loop() {
     });
 
     if(sun.texture) {
-        tex = sun.texture.texture;
+        tex = sun.texture;
     }
     const sun_scene_obj = {
         model: sun.model,
@@ -141,6 +141,12 @@ async function start_app() {
 
     const url = new URL(window.location.href);
     let current_backend = url.searchParams.get('request_backend') || 'webgl2';
+    let use_compute = false;
+    if(current_backend === EngineBackend.BACKEND_WEBGPU && url.searchParams.get('use_compute')) {
+        use_compute = (url.searchParams.get('use_compute') === 'true');
+    }
+
+    
 
     Diagnostics.init();
 
@@ -160,10 +166,28 @@ async function start_app() {
 
 
     document.getElementById('intiate_backend_change').addEventListener('click', (event) => {
-        url.searchParams.set('request_backend', current_backend !== EngineBackend.BACKEND_WEBGPU ? 
-                                                    EngineBackend.BACKEND_WEBGPU : EngineBackend.BACKEND_WEBGL_2);
+        const backend_request = current_backend !== EngineBackend.BACKEND_WEBGPU ? 
+                                    EngineBackend.BACKEND_WEBGPU : EngineBackend.BACKEND_WEBGL_2
+        url.searchParams.set('request_backend', backend_request);
+
+        if(backend_request === EngineBackend.BACKEND_WEBGL_2 && url.searchParams.get('use_compute')) {
+            url.searchParams.delete('use_compute');
+        }
+
         window.location.href = url.href;
     })
+
+    
+    if(current_backend === EngineBackend.BACKEND_WEBGL_2) {
+        document.getElementById('toggle_compute_shader').hidden = true;
+    }
+    else {
+        document.getElementById('toggle_compute_shader').addEventListener('click', (event) => {
+            url.searchParams.set('use_compute', !use_compute);
+            window.location.href = url.href;
+        })
+    }
+
 
     // preparing test texture
     let texture_size = new Extents2D(1000, 500);
@@ -180,7 +204,9 @@ async function start_app() {
     planet_viewer = new PlanetViewer('planet_canvas');
 
     
-    engine = EngineHelper.create(document.getElementById('planet_canvas'), RENDER_RESOLUTION, current_backend);
+    engine = EngineHelper.create(document.getElementById('planet_canvas'), RENDER_RESOLUTION, current_backend, {
+        use_compute
+    });
     await engine.init();
 
     console.log(engine);
