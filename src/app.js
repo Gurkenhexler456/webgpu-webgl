@@ -260,15 +260,9 @@ async function start_app() {
 
     planets.forEach((planet) => {
         planet.radius *= 10;
-        load_texture(`images/${planet.name}.jpg`, (tex) => {
-            planet.texture = tex;
-        }, () => {});
     });
 
     sun.radius *= 10;
-    load_texture(`images/${sun.name}.jpg`, (tex) => {
-        sun.texture = tex;
-    }, () => {});
 
     console.log(planets);
 
