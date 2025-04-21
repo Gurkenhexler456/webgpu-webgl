@@ -133,6 +133,9 @@ function loop() {
         light_sources: [sun_scene_obj]
     }, planet_viewer.camera.camera);
 
+
+    frame_count++;
+
     requestAnimationFrame(loop);
    
 }
@@ -288,7 +291,7 @@ function select_planet(planet_index) {
 
     planet_viewer.camera.target = planets[selected_planet].position;
 
-    if(old_planet) {
+    if(old_planet >= 0 && old_planet < planets.length) {
         const current_distance = planet_viewer.camera.distance;
         const current_radius = planets[old_planet].radius;
 
