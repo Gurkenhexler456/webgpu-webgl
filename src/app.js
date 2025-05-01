@@ -286,7 +286,7 @@ function select_planet(planet_index) {
 
         planet_viewer.camera.distance = current_distance * ratio;
 
-        Diagnostics.log(`switched to planet: ${planets[select_planet].name}`)
+        Diagnostics.log(`switched to planet: ${planets[selected_planet].name}`)
     }
 }
 
