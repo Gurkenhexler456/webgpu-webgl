@@ -15,7 +15,7 @@ export class PlanetViewer {
         /**
          * @type {SphereCamera}
          */
-        this.camera = new SphereCamera(new Vector3(0, 0, -214.833904), .25);
+        this.camera = new SphereCamera(new Vector3(0, 0, -214.833904), .18);
 
         this.last_position = new Vector2(0, 0);
         this.#setup_listeners(this.canvas);
@@ -45,7 +45,7 @@ export class PlanetViewer {
 
     #setup_listeners(canvas) {
 
-        this.canvas.addEventListener('wheel', (event) => { this.zoom(event.deltaY * 0.0001); });
+        //this.canvas.addEventListener('wheel', (event) => { this.zoom(event.deltaY * 0.0001); });
     
         this.canvas.addEventListener('pointerdown', (event) => {
             console.log(`clicking`);

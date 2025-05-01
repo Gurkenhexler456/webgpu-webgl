@@ -7,7 +7,6 @@ import { Diagnostics } from "../lib/util/diagnostics.js";
 
 import { PlanetViewer } from "./input/mouse_handler.js";
 import { Planet } from "./solar_system/planet.js";
-import { get_test_scene } from "../lib/solar_engine/test_scene.js";
 import { EngineHelper } from "../lib/solar_engine/engine_helper.js";
 import { EngineBackend } from "../lib/solar_engine/engine.js";
 
@@ -61,10 +60,6 @@ let texture;
 let sun;
 
 
-
-let scene;
-
-
 let last_frame = 0;
 let this_frame = 0;
 
@@ -91,10 +86,6 @@ function loop() {
     });
 
     sun.update(24 * delta_s);
-
-    
-    scene.objs[0].transform = Matrix4.identity();
-    scene.objs[0].transform.set_translation(0, 0, -3 + Math.sin(time));
 
 
         
@@ -212,6 +203,8 @@ async function start_app() {
         })
     }
 
+    Diagnostics.log(`using compute shader: ${use_compute}`)
+
     engine.set_props({ use_compute });
     await engine.init();
     console.log(engine);
@@ -232,8 +225,6 @@ async function start_app() {
             perspective_props.z_far
         );
     }
-
-    scene = get_test_scene();
     
     document.getElementById('backend').innerHTML = `Backend: ${engine.backend}`;
 
@@ -257,6 +248,7 @@ async function start_app() {
     ]
 
     sun = new Planet('sun', 1,  new Vector3(0, 0, 0))
+
 
     planets.forEach((planet) => {
         planet.radius *= 10;
@@ -293,6 +285,8 @@ function select_planet(planet_index) {
         const ratio = new_radius / current_radius;
 
         planet_viewer.camera.distance = current_distance * ratio;
+
+        Diagnostics.log(`switched to planet: ${planets[select_planet].name}`)
     }
 }
 
