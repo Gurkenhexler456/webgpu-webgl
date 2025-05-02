@@ -1,5 +1,7 @@
 import { SphereCamera } from "../../lib/graphics/util/sphere_camera.js";
 import { Vector2, Vector3 } from "../../lib/math/vector.js";
+import { Diagnostics } from "../../lib/util/diagnostics.js";
+import { frame_count } from "../app.js";
 
 export class PlanetViewer {
 
@@ -39,6 +41,7 @@ export class PlanetViewer {
         this.camera.pitch -= delta_rotation.y;
 
         //console.log(`camera: yaw: ${this.camera.yaw}, pitch: ${this.camera.pitch}`);
+        Diagnostics.log(`Frame ${frame_count}: camera: yaw: ${this.camera.yaw}, pitch: ${this.camera.pitch}`);
     }
 
     
@@ -48,7 +51,6 @@ export class PlanetViewer {
         //this.canvas.addEventListener('wheel', (event) => { this.zoom(event.deltaY * 0.0001); });
     
         this.canvas.addEventListener('pointerdown', (event) => {
-            console.log(`clicking`);
             this.last_position.set(event.clientX, event.clientY);
             this.#mouse_down = true;
         });
@@ -65,7 +67,6 @@ export class PlanetViewer {
         });
     
         this.canvas.addEventListener('pointerup', (event) => {
-            console.log(`releasing`);
             this.#mouse_down = false;
         });
     }

@@ -65,7 +65,7 @@ let this_frame = 0;
 
 let time = 0;
 
-let frame_count = 0;
+export let frame_count = 0;
 
 function loop() {
 
@@ -203,8 +203,6 @@ async function start_app() {
         })
     }
 
-    Diagnostics.log(`using compute shader: ${use_compute}`)
-
     engine.set_props({ use_compute });
     await engine.init();
     console.log(engine);
@@ -229,6 +227,7 @@ async function start_app() {
     document.getElementById('backend').innerHTML = `Backend: ${engine.backend}`;
 
     Diagnostics.log(`using backend: ${engine.backend}`);
+    Diagnostics.log(`using compute shader: ${use_compute}`);
     Diagnostics.log(`renderer info: ${RenderSystem.get_renderer_info()}`);
 
     texture = RenderSystem.create_texture_2D(texture_info.size, texture_info.data);
